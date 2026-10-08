@@ -1,0 +1,23 @@
+# Node / Frontend
+tripzo-frontend/node_modules/
+tripzo-frontend/dist/
+tripzo-frontend/.vite/
+tripzo-frontend/.env
+tripzo-frontend/.env.*
+
+# Java / Backend
+tripzo-backend/target/
+tripzo-backend/.idea/
+tripzo-backend/.classpath
+tripzo-backend/.project
+tripzo-backend/.settings/
+tripzo-backend/.factorypath
+tripzo-backend/.env
+tripzo-backend/*.log
+
+# General
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

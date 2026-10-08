@@ -1,0 +1,93 @@
+CREATE DATABASE IF NOT EXISTS tripzo_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE tripzo_db;
+
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('RIDER', 'DRIVER', 'ADMIN') NOT NULL DEFAULT 'RIDER',
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS drivers (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL UNIQUE,
+    license_number VARCHAR(50) NOT NULL UNIQUE,
+    vehicle_type VARCHAR(30) NOT NULL,
+    rating DECIMAL(3,2) NOT NULL DEFAULT 4.50,
+    total_trips INT NOT NULL DEFAULT 0,
+    is_available TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_drivers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS vehicles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    driver_id BIGINT NOT NULL,
+    model VARCHAR(80) NOT NULL,
+    color VARCHAR(40) NOT NULL,
+    plate_number VARCHAR(30) NOT NULL UNIQUE,
+    registration_number VARCHAR(40) NOT NULL UNIQUE,
+    vehicle_type ENUM('BIKE', 'AUTO', 'CAB', 'PREMIUM') NOT NULL,
+    is_verified TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_vehicles_driver FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS rides (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    rider_id BIGINT NOT NULL,
+    driver_id BIGINT NULL,
+    pickup_latitude DECIMAL(10,8) NOT NULL,
+    pickup_longitude DECIMAL(11,8) NOT NULL,
+    drop_latitude DECIMAL(10,8) NOT NULL,
+    drop_longitude DECIMAL(11,8) NOT NULL,
+    pickup_address VARCHAR(255) NOT NULL,
+    drop_address VARCHAR(255) NOT NULL,
+    status ENUM('REQUESTED', 'ACCEPTED', 'PICKED_UP', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'REQUESTED',
+    fare DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    estimated_duration_minutes INT NOT NULL DEFAULT 0,
+    distance_km DECIMAL(6,2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    CONSTRAINT fk_rides_rider FOREIGN KEY (rider_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rides_driver FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    ride_id BIGINT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_method ENUM('CASH', 'UPI', 'CARD', 'WALLET') NOT NULL DEFAULT 'UPI',
+    payment_status ENUM('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED') NOT NULL DEFAULT 'PENDING',
+    transaction_reference VARCHAR(100) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_payments_ride FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('INFO', 'BOOKING', 'PAYMENT', 'SYSTEM') NOT NULL DEFAULT 'INFO',
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_rides_rider ON rides(rider_id);
+CREATE INDEX idx_rides_driver ON rides(driver_id);
+CREATE INDEX idx_rides_status ON rides(status);
+CREATE INDEX idx_payments_ride ON payments(ride_id);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
